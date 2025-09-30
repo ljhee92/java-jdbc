@@ -59,8 +59,11 @@ class Stage2Test {
 
         log.info("transactions : {}", actual);
         assertThat(actual)
-                .hasSize(0)
-                .containsExactly("");
+                .hasSize(2)
+                .containsExactly(
+                        "transaction.stage2.SecondUserService.saveSecondTransactionWithRequiresNew",
+                        "transaction.stage2.FirstUserService.saveFirstTransactionWithRequiredNew"
+                );
     }
 
     /**
