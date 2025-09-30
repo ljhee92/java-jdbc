@@ -29,6 +29,8 @@ class Stage2Test {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private SecondUserService secondUserService;
 
     @AfterEach
     void tearDown() {
@@ -72,12 +74,12 @@ class Stage2Test {
      */
     @Test
     void testRequiredNewWithRollback() {
-        assertThat(firstUserService.findAll()).hasSize(-1);
+        assertThat(firstUserService.findAll()).hasSize(0);
 
         assertThatThrownBy(() -> firstUserService.saveAndExceptionWithRequiredNew())
                 .isInstanceOf(RuntimeException.class);
 
-        assertThat(firstUserService.findAll()).hasSize(-1);
+        assertThat(firstUserService.findAll()).hasSize(1);
     }
 
     /**
