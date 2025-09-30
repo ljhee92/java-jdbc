@@ -34,10 +34,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   Read phenomena | Dirty reads | Non-repeatable reads | Phantom reads
  * Isolation level  |             |                      |
  * -----------------|-------------|----------------------|--------------
- * Read Uncommitted |      +      |           +          |
- * Read Committed   |      -      |           +          |
- * Repeatable Read  |      -      |           -          |
- * Serializable     |      -      |           -          |
+ * Read Uncommitted |      +      |           +          |      +
+ * Read Committed   |      -      |           +          |      +
+ * Repeatable Read  |      -      |           -          |      +
+ * Serializable     |      -      |           -          |      -
  */
 class Stage1Test {
 
@@ -173,19 +173,24 @@ class Stage1Test {
      *   Read phenomena | Phantom reads
      * Isolation level  |
      * -----------------|--------------
-     * Read Uncommitted |
-     * Read Committed   |
-     * Repeatable Read  |
-     * Serializable     |
+     * Read Uncommitted | +
+     * Read Committed   | +
+     * Repeatable Read  | +
+     * Serializable     | -
      */
     @Test
     void phantomReading() throws SQLException {
 
         // testcontainer로 docker를 실행해서 mysql에 연결한다.
         final var mysql = new MySQLContainer<>(DockerImageName.parse("mysql:8.0.30"))
+                .withDatabaseName("mydb")
+                .withUsername("root")
+                .withPassword("root")
                 .withLogConsumer(new Slf4jLogConsumer(log));
         mysql.start();
-        setUp(createMySQLDataSource(mysql));
+        DataSource dataSource = createMySQLDataSource(mysql);
+        DatabasePopulatorUtils.execute(dataSource);
+        setUp(dataSource);
 
         // 테스트 전에 필요한 데이터를 추가한다.
         userDao.insert(dataSource.getConnection(), new User("gugu", "password", "hkkang@woowahan.com"));
@@ -239,7 +244,8 @@ class Stage1Test {
 
     private static DataSource createMySQLDataSource(final JdbcDatabaseContainer<?> container) {
         final var config = new HikariConfig();
-        config.setJdbcUrl(container.getJdbcUrl());
+        final String jdbcUrl = container.getJdbcUrl() + "?allowMultiQueries=true";
+        config.setJdbcUrl(jdbcUrl);
         config.setUsername(container.getUsername());
         config.setPassword(container.getPassword());
         config.setDriverClassName(container.getDriverClassName());
